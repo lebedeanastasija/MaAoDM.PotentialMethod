@@ -1,5 +1,6 @@
 var trainingPoints = [{x: -6, y: 1 }, {x: 1, y: -1} , {x: -2, y: -4}, {x: 2, y: 2}],
-	functions = [(x, y) => 0];
+	functions = [(x, y) => 0],
+	separatingFunction = null;
 	
 
 var svgContainer,
@@ -31,33 +32,65 @@ function onLoad (){
 	.attr("width", 500)
 	.attr("height", 550);
 
-	//classes.push(generateNumbers(numbersCount, {min: 0, max: 300}) );	
-
 	scale = getScale();
 	drawCoordinateAxes(axisLength, {x0: 70, y0: 500}, scale);		
-	drawPoints(trainingPoints, colors[0], 3);
+	drawPoints(trainingPoints, colors[0], 4);
 
+	var functionIsFound = false;
+	var i = 0;
+	var p = 1;
 
-	var pot1 = particularPointPotential(-6, 1);
-
-	var tot1 = totalPotential(pot1, 1);
-	
-	var res1 = tot1(1, -1);
-	console.log(res1);
-	if(res1 <= 0) {
-		functions.push(tot1);
-		console.log("Correction");
-	} else {
-		var str = functions[functions.length - 1].toString();
-		console.log(str);
+	while( (!functionIsFound) && (i < trainingPoints.length - 1)) {
+		var potential = particularPointPotential(trainingPoints[i].x, trainingPoints[i].y);
+		var total = totalPotential(potential, p);
+		var resultInPoint = total(trainingPoints[i + 1].x, trainingPoints[i + 1].y);
+		if(i < 2) {
+			if(resultInPoint > 0) {
+				console.log("Founded");
+				functionIsFound = true;
+				separatingFunction = total;
+			} else {
+				console.log("Correction");
+				p = 1;
+				functions.push(total);
+			}
+		} else {
+			if(resultInPoint <= 0) {
+				console.log("Founded");
+				functionIsFound = true;
+				separatingFunction = total;
+			} else {
+				console.log("Correction");
+				p = -1;
+				functions.push(total);
+			}
+		}	
 	}
-	console.log(pot1);
-	console.log(res1);
-	var arr = calcSeparatingFunctionResults( (x) =>(12*x - 1)/(16*(1-3*x)) );
-	console.log(arr);
 
-	drawPoints(arr, colors[2], 1, true);
+	console.log(separatingFunction);
+
+	/*var arr = calcSeparatingFunctionResults( (x) => - 1/4);
+	drawPoints(arr, colors[2], 1, true);*/
+
+	var testPoints = generatePoints(1000, {min: -1*maxAxisValue, max: maxAxisValue});
+	console.log(testPoints);
+	testSeparatingFunction(testPoints);
+	//drawSeparatingFunction(testPoints);
 }
+
+function testSeparatingFunction(points) {
+	points.forEach(point => {
+		if(separatingFunction(point.x, point.y) > 0) {
+			drawPoint(point, colors[3], 2);
+		} else {
+			drawPoint(point, colors[4], 2);
+		}
+	});
+}
+
+/*drawSeparatingFunction(testPoints) {
+	testPoints.fo
+}*/
 
 function generateNumbers(count, range) {
 	var numbers = []
@@ -65,6 +98,16 @@ function generateNumbers(count, range) {
 		numbers.push(randomInRange(range.min, range.max));		
 	}
 	return numbers;
+}
+
+function generatePoints(count, range) {
+	var points = []
+	for(var i = 0; i < count; i++) {
+		var x = randomInRange(range.min, range.max);
+		var	y = randomInRange(range.min, range.max);	
+		points.push({x: x, y: y});		
+	}
+	return points;
 }
 
 function getSeparatingFunction () {
@@ -142,7 +185,6 @@ function drawPoints(functionResults, color, width, connect) {
 	if(!connect) {
 		functionResults.forEach((point) =>  {	
 			//if (startPoint.y - (point.y * scale) < startPoint.y){
-				console.log(point.y);
 				drawPoint(point, color, width);				
 			//}			
 		});
